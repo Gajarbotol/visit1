@@ -60,32 +60,28 @@ def visit():
         return render_template_string(HTML_TEMPLATE, result=result, screenshots=screenshots)
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')  # Run headless Chrome
+    options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--remote-debugging-port=9222')
 
-    successful_visits = 0
-    errors = []
-
-    for i in range(visit_count):
-        driver = None
-        try:
-            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = None
+    try:
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        for i in range(visit_count):
             driver.get(url)
-            time.sleep(3)  # Wait for page load
+            time.sleep(3)
 
             screenshot_path = f'static/screenshot-{i + 1}-{int(time.time())}.png'
             driver.save_screenshot(screenshot_path)
             screenshots.append(screenshot_path)
-            successful_visits += 1
-        except Exception as e:
-            errors.append(f'Visit {i + 1} failed: {str(e)}')
-        finally:
-            if driver:
-                driver.quit()
+        result = f'Completed {visit_count} visits successfully.'
+    except Exception as e:
+        result = f'Error during visits: {str(e)}'
+    finally:
+        if driver:
+            driver.quit()
 
-    result = f'Completed {successful_visits} out of {visit_count} visits.<br>' \
-             f'Errors: {errors if errors else "None"}'
     return render_template_string(HTML_TEMPLATE, result=result, screenshots=screenshots)
 
 if __name__ == '__main__':
