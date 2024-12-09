@@ -1,11 +1,9 @@
-from flask import Flask, request, render_template_string, send_from_directory
+from flask import Flask, request, render_template_string
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import os
 import time
-import threading
-import requests
 
 app = Flask(__name__)
 
@@ -70,6 +68,7 @@ def visit():
     errors = []
 
     for i in range(visit_count):
+        driver = None
         try:
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
             driver.get(url)
@@ -82,21 +81,13 @@ def visit():
         except Exception as e:
             errors.append(f'Visit {i + 1} failed: {str(e)}')
         finally:
-            driver.quit()
+            if driver:
+                driver.quit()
 
     result = f'Completed {successful_visits} out of {visit_count} visits.<br>' \
              f'Errors: {errors if errors else "None"}'
     return render_template_string(HTML_TEMPLATE, result=result, screenshots=screenshots)
 
-def auto_ping():
-    while True:
-        try:
-            requests.get('http://localhost:5000')
-            time.sleep(600)  # Ping every 10 minutes
-        except Exception as e:
-            print(f"Auto-ping failed: {e}")
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    threading.Thread(target=auto_ping, daemon=True).start()
     app.run(host='0.0.0.0', port=port, debug=True)
